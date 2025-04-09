@@ -7,6 +7,7 @@ use std::{
 	time::{Duration, Instant},
 };
 
+use regex::Regex;
 use apcaccess::{APCAccess, APCAccessConfig};
 use chrono::{DateTime, NaiveDate, NaiveTime};
 use num::{Num, Unsigned};
@@ -35,18 +36,57 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 		}
 	})()?;
 
-	let mut apc = APCThrottledAccess::new(APCAccessConfig { timeout: Duration::from_millis(500), ..Default::default() }, Duration::from_secs(1));
-
+	let mut copied_hosts = server_options.hosts.clone();
+	if copied_hosts.len() == 0 {
+		copied_hosts = vec![HostSpecificOptions::default()]
+	}
 	render_prometheus(server_options.into(), (), |_request, _| async move {
-		let data = apc.fetch().await.map_err(|e| format!("error fetching data from apcupsd: {e}\n"))?;
-
-		let rendered_result = render_metrics(data);
-
-		Ok(rendered_result?)
+		let mut rendered_result = String::new();
+		let compiled = Regex::new(r"(?m)^([^#])")?;
+//		println!("Hosts: {}", copied_hosts.len());
+		for (host_index, host) in copied_hosts.iter().enumerate() {
+			let current_host = &host.address;
+			let current_port = host.port;
+			let current_slug = host.slug.clone().unwrap_or_else(|| format!("apcupsd{}", host_index));
+//			println!("Accessing host {}/{}!", current_host, &current_slug);
+			let mut apc = APCThrottledAccess::new(
+				APCAccessConfig {
+					host: current_host.to_string(),
+					port: current_port,
+					timeout: Duration::from_millis(500),
+					..Default::default()
+				},
+				Duration::from_secs(1),
+			);
+			let data = apc.fetch().await.map_err(|e| format!("error fetching data from apcupsd: {e}\n"))?;
+			let unprocessed_result = render_metrics(data)?;
+			let processed = compiled.replace_all(&unprocessed_result, format!("{}.$1", current_slug));
+			rendered_result.push_str(&processed)
+		}
+		Ok(rendered_result)
 	})
 	.await;
 
 	Ok(())
+}
+
+#[derive(Clone)]
+#[derive(Deserialize)]
+#[serde(default)]
+struct HostSpecificOptions {
+	address: String,
+	port: u16,
+	slug: Option<String>,
+}
+
+impl Default for HostSpecificOptions {
+	fn default() -> Self {
+		Self {
+			address: "127.0.0.1".into(),
+			port: 3551,
+			slug: None,
+		}
+	}
 }
 
 #[derive(Deserialize)]
@@ -57,6 +97,8 @@ struct ApcupsdExporterOptions {
 	pub authorization: Authorization,
 	#[serde(default)]
 	pub tls_options: Option<TlsOptions>,
+	#[serde(default)]
+	pub hosts: Vec<HostSpecificOptions>,
 }
 
 impl Default for ApcupsdExporterOptions {
@@ -65,6 +107,7 @@ impl Default for ApcupsdExporterOptions {
 			address: SocketAddr::new([127, 0, 0, 1].into(), 9175),
 			authorization: Default::default(),
 			tls_options: Default::default(),
+			hosts: vec![],
 		}
 	}
 }
