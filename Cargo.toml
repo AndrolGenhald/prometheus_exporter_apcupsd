@@ -9,6 +9,7 @@ chrono = "0.4.38"
 futures = "0.3.30"
 num = "0.4.3"
 prometheus_exporter_base = { version = "1.4.0", features = ["hyper_server", "serde"], git = "https://github.com/AndrolGenhald/prometheus_exporter_base" }
+regex = "1.11.1"
 serde = { version = "1.0.210", features = ["derive"] }
 serde_ignored = "0.1.10"
 serde_yaml = "0.9.34"
