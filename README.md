@@ -8,8 +8,8 @@ been added, removed, and changed in apcupsd).
 
 ## Configuration
 
-Configuration is read from `/etc/prometheus/apcupsd_exporter_config.yaml`. It is currently not possible to change the location of the config file, and
-configuration is limited to what I personally needed, so changing the apcupsd NIS server host (localhost) or port (3551) from their defaults isn't
+Configuration is read from `/etc/prometheus/apcupsd_exporter_config.yaml` by default, a different filepath can be specified with the `-c` flag.
+Configuration is limited to what I personally needed, so changing the apcupsd NIS server host (localhost) or port (3551) from their defaults isn't
 currently supported. If you want to be able to change those, or to be able to run multiple instances of the exporter to export multiple UPSes on a
 single host, feel free to open an issue on [GitHub](https://github.com/AndrolGenhald/prometheus_exporter_apcupsd).
 
