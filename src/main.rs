@@ -940,7 +940,7 @@ mod tests {
 				snapshot_path => "../tests/snapshots",
 				snapshot_suffix => (|| Some([path.parent()?.file_name()?.to_str()?, path.file_name()?.to_str()?].join("/")))().ok_or("bad filename")?
 			},
-			{ Ok::<_, RenderMetricsError>(insta::assert_snapshot!(render_metrics(test_data)?)) }
+			{ insta::assert_snapshot!(render_metrics(test_data)?); Ok::<_, RenderMetricsError>(()) }
 		)?;
 		Ok(())
 	}

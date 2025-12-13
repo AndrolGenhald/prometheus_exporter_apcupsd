@@ -1,4 +1,4 @@
-/// Adapted from apcupsd defines.h
+//! Adapted from apcupsd defines.h
 
 pub(crate) mod status {
 	/* bit values for APC UPS Status Byte (ups->Status) */
