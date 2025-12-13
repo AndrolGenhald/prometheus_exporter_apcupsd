@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 apcaccess = { version = "0.1.3", git = "https://github.com/AndrolGenhald/apcaccess-rs" }
 chrono = "0.4.38"
+clap = { version = "4.5.53", features = ["derive"] }
 futures = "0.3.30"
 num = "0.4.3"
 prometheus_exporter_base = { version = "1.4.0", features = ["hyper_server", "serde"], git = "https://github.com/AndrolGenhald/prometheus_exporter_base" }

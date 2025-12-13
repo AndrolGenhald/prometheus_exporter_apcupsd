@@ -9,6 +9,7 @@ use std::{
 
 use apcaccess::{APCAccess, APCAccessConfig};
 use chrono::{DateTime, NaiveDate, NaiveTime};
+use clap::Parser;
 use num::{Num, Unsigned};
 use prometheus_exporter_base::{
 	prelude::{Authorization, ServerOptions, TlsOptions},
@@ -20,17 +21,21 @@ use tokio::{sync::Mutex, task::spawn_blocking};
 
 mod apcupsd_bitmasks;
 
-const CONFIG_PATH: &str = "/etc/prometheus/apcupsd_exporter_config.yaml";
+const DEFAULT_CONFIG_PATH: &str = "/etc/prometheus/apcupsd_exporter_config.yaml";
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+	let cmd_options = CommandlineOptions::parse();
 	let server_options = (|| -> Result<ApcupsdExporterOptions, Box<dyn std::error::Error>> {
-		if fs::exists(CONFIG_PATH)? {
+		if fs::exists(&cmd_options.config)? {
 			Ok(serde_ignored::deserialize(
-				serde_yaml::Deserializer::from_reader(fs::File::open(CONFIG_PATH)?),
+				serde_yaml::Deserializer::from_reader(fs::File::open(&cmd_options.config)?),
 				|path| eprintln!("Ignoring unknown configuration key {path}"),
 			)?)
 		} else {
+			if cmd_options.config != DEFAULT_CONFIG_PATH {
+				eprintln!("Specified config file ({}) does not exist, using default values", &cmd_options.config);
+			}
 			Ok(Default::default())
 		}
 	})()?;
@@ -47,6 +52,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 	.await;
 
 	Ok(())
+}
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct CommandlineOptions {
+	/// Path to configuration file
+	#[arg(short, long, default_value = DEFAULT_CONFIG_PATH)]
+	config: String,
 }
 
 #[derive(Deserialize)]
