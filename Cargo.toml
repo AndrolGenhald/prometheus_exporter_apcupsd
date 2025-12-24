@@ -12,6 +12,7 @@ num = "0.4.3"
 prometheus_exporter_base = { version = "1.4.0", features = ["hyper_server", "serde"], git = "https://github.com/AndrolGenhald/prometheus_exporter_base" }
 serde = { version = "1.0.210", features = ["derive"] }
 serde_ignored = "0.1.10"
+serde_with = "3.16.1"
 serde_yaml = "0.9.34"
 thiserror = "1.0.63"
 tokio = { version = "1.40.0", features = ["full"] }

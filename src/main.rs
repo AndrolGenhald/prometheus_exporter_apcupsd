@@ -16,6 +16,7 @@ use prometheus_exporter_base::{
 	render_prometheus, MetricType, MissingValue, PrometheusInstance, PrometheusMetric,
 };
 use serde::Deserialize;
+use serde_with::{serde_as, DurationSecondsWithFrac};
 use thiserror::Error;
 use tokio::{sync::Mutex, task::spawn_blocking};
 
@@ -40,10 +41,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 		}
 	})()?;
 
-	let mut apc = APCThrottledAccess::new(APCAccessConfig { timeout: Duration::from_millis(500), ..Default::default() }, Duration::from_secs(1));
+	let mut apc = APCThrottledAccess::new(
+		APCAccessConfig {
+			timeout: server_options.apcaccess_timeout,
+			..Default::default()
+		},
+		Duration::from_secs(1),
+	);
 
 	render_prometheus(server_options.into(), (), |_request, _| async move {
-		let data = apc.fetch().await.map_err(|e| format!("error fetching data from apcupsd: {e}\n"))?;
+		let data = apc.fetch().await.map_err(|e| {
+			eprintln!("error fetching data from apcupsd: {e}\n");
+			format!("error fetching data from apcupsd: {e}\n")
+		})?;
 
 		let rendered_result = render_metrics(data);
 
@@ -62,14 +72,15 @@ struct CommandlineOptions {
 	config: String,
 }
 
+#[serde_as]
 #[derive(Deserialize)]
 #[serde(default)]
 struct ApcupsdExporterOptions {
 	pub address: SocketAddr,
-	#[serde(default)]
 	pub authorization: Authorization,
-	#[serde(default)]
 	pub tls_options: Option<TlsOptions>,
+	#[serde_as(as = "DurationSecondsWithFrac<f64>")]
+	pub apcaccess_timeout: Duration,
 }
 
 impl Default for ApcupsdExporterOptions {
@@ -78,6 +89,7 @@ impl Default for ApcupsdExporterOptions {
 			address: SocketAddr::new([127, 0, 0, 1].into(), 9175),
 			authorization: Default::default(),
 			tls_options: Default::default(),
+			apcaccess_timeout: Duration::from_secs(1),
 		}
 	}
 }
@@ -109,10 +121,7 @@ fn render_metrics(mut apcupsd_data: HashMap<String, String>) -> Result<String, R
 	let label_keys = [("UPSNAME", "ups_name"), ("MODEL", "model"), ("SERIALNO", "serial_number")];
 	for (key, label) in label_keys {
 		if let Some(val) = apcupsd_data.remove(key) {
-			labels.push((
-				label.to_string(),
-				val,
-			));
+			labels.push((label.to_string(), val));
 		}
 	}
 

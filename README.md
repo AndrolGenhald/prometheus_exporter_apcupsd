@@ -28,6 +28,8 @@ tls_options:
   key_file: /path/to/key.key
   # CA certificate used to sign client certificates when doing mutual TLS; optional
   client_certificate_ca_file: /path/to/ca-certificate.crt
+# Timeout in seconds when requesting data from apcupsd; default 1
+apcaccess_timeout: 2.5
 ```
 
 ## Why not https://github.com/mdlayher/apcupsd_exporter or https://github.com/io-developer/prom-apcupsd-exporter?
